@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BC Hockey Game Tracker ☁️</title>
+
+<!-- 
+═══════════════════════════════════════════════════════════════════════════
+  🔥 FIREBASE CLOUD SYNC SETUP
+═══════════════════════════════════════════════════════════════════════════
+
+QUICK SETUP (5 minutes):
+1. Go to: https://console.firebase.google.com
+2. Click "Add project" → name it anything → click through setup
+3. Click the </> web icon → give it a nickname → "Register app"
+4. Firebase will show you 6 lines of code that look like:
+   
+   apiKey: "AIzaSy...",
+   authDomain: "...",
+   projectId: "...",
+   storageBucket: "...",
+   messagingSenderId: "...",
+   appId: "..."
+
+5. Copy those 6 lines
+6. Scroll down to line 50 in this file
+7. Replace the YOUR-...-HERE text with what you copied
+8. Save this file and open it - your data will automatically sync!
+
+-->
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+    color: #333;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  header {
+    background: #8B1A1A;
+    color: #FFD700;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    text-align: center;
+  }
+
+  header h1 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    color: #FFD700;
+  }
+
+  header .stats-summary {
+    font-size: 1rem;
+    margin-top: 15px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    max-width: 1200px;
+    margin: 15px auto 0;
+  }
+
+  header .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  header .stat-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+  }
+
+  header .stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    padding: 12px 24px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .tab:hover {
+    border-color: #8B1A1A;
+  }
+
+  .tab.active {
+    background: #8B1A1A;
+    color: white;
+    border-color: #8B1A1A;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  .form-section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #555;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #8B1A1A;
+  }
+
+  .btn {
+    padding: 12px 30px;
+    background: #8B1A1A;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn:hover {
+    background: #6B0A0A;
+  }
+
+  .btn-secondary {
+    background: #666;
+    margin-left: 10px;
+  }
+
+  .btn-secondary:hover {
+    background: #444;
+  }
+
+  .btn-delete {
+    background: #c0392b;
+  }
+
+  .btn-delete:hover {
+    background: #a02818;
+  }
+
+  .btn-edit {
+    background: #2980b9;
+  }
+
+  .btn-edit:hover {
+    background: #1f5f8b;
+  }
+
+  table {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  th {
+    background: #8B1A1A;
+    color: white;
+    font-weight: 600;
+  }
+
+  tr:hover {
+    background: #f9f9f9;
+  }
+
+  .result-W {
+    color: #2d7d2d;
+    font-weight: 700;
+  }
+
+  .result-L {
+    color: #c0392b;
+    font-weight: 700;
+  }
+
+  .result-T {
+    color: #f39c12;
+    font-weight: 700;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .stat-card h3 {
+    margin-bottom: 15px;
+    color: #8B1A1A;
+    border-bottom: 2px solid #8B1A1A;
+    padding-bottom: 10px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  .stat-row:last-child {
+    border-bottom: none;
+  }
+
+  .stat-label {
+    font-weight: 600;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-small {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    background: #666;
+  }
+
+  .btn-small:hover {
+    background: #444;
+  }
+
+  /* Modal styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    overflow-y: auto;
+  }
+
+  .modal.active {
+    display: block;
+  }
+
+  .modal-content {
+    background: #fff;
+    margin: 50px auto;
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 900px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+  }
+
+  .modal-close:hover {
+    color: #333;
+  }
+
+  .modal h2 {
+    color: #8B1A1A;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #8B1A1A;
+  }
+
+  .stat-card-clickable {
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .stat-card-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .top-list-item {
+    background: #f9f9f9;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .top-list-rank {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #8B1A1A;
+    min-width: 50px;
+  }
+
+  .top-list-details {
+    flex: 1;
+  }
+
+  .top-list-game {
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .top-list-meta {
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .top-list-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #8B1A1A;
+  }
+
+  /* Opponent color styles */
+  .opp-bu { background: #CC0000 !important; color: white !important; }
+  .opp-northeastern { background: #000000 !important; color: #FF3333 !important; }
+  .opp-stonehill { background: #51247A !important; color: white !important; }
+  .opp-harvard { background: #A51C30 !important; color: white !important; }
+  .opp-umass { background: #881C1C !important; color: white !important; }
+  .opp-providence { background: #000000 !important; color: white !important; }
+  .opp-unh { background: #003C71 !important; color: white !important; }
+  .opp-maine { background: #003263 !important; color: white !important; }
+  .opp-vermont { background: #00533E !important; color: #FFD700 !important; }
+  .opp-lowell { background: #0067B1 !important; color: white !important; }
+  .opp-merrimack { background: #003B5C !important; color: #FFD700 !important; }
+  .opp-uconn { background: #000E2F !important; color: white !important; }
+  .opp-notre-dame { background: #0C2340 !important; color: #C99700 !important; }
+  .opp-denver { background: #8B2332 !important; color: #CFB87C !important; }
+  .opp-michigan { background: #00274C !important; color: #FFCB05 !important; }
+  .opp-michigan-state { background: #18453B !important; color: white !important; }
+  .opp-minnesota { background: #7A0019 !important; color: #FFCC33 !important; }
+  .opp-wisconsin { background: #C5050C !important; color: white !important; }
+  .opp-north-dakota { background: #009A44 !important; color: white !important; }
+  .opp-quinnipiac { background: #002855 !important; color: #FFD700 !important; }
+  .opp-yale { background: #00356B !important; color: white !important; }
+  .opp-western-michigan { background: #5C4033 !important; color: white !important; }
+  .opp-st-cloud-state { background: #000000 !important; color: #CC0000 !important; }
+  .opp-sacred-heart { background: #C0C0C0 !important; color: #CC0000 !important; }
+  .opp-rpi { background: #CC0000 !important; color: white !important; }
+  .opp-rit { background: #F76902 !important; color: #000000 !important; }
+  .opp-northern-michigan { background: #046A38 !important; color: #FFD700 !important; }
+  .opp-new-brunswick { background: #CC0000 !important; color: #000000 !important; }
+  .opp-minn-duluth { background: #7A0019 !important; color: #FFD700 !important; }
+  .opp-michigan-tech { background: #000000 !important; color: #FFD700 !important; }
+  .opp-miami { background: #C8102E !important; color: white !important; }
+  .opp-long-island { background: #003087 !important; color: #FFD700 !important; }
+  .opp-lake-superior { background: #FFD700 !important; color: #003087 !important; }
+  .opp-holy-cross { background: #602D89 !important; color: white !important; }
+  .opp-dartmouth { background: #00693E !important; color: white !important; }
+  .opp-colorado-college { background: #FFD700 !important; color: #000000 !important; }
+  .opp-clarkson { background: #006747 !important; color: white !important; }
+  .opp-brown { background: #4E3629 !important; color: white !important; }
+  .opp-bowling-green { background: #FE5000 !important; color: white !important; }
+  .opp-bentley { background: #003DA5 !important; color: white !important; }
+  .opp-army { background: #000000 !important; color: #D4AF37 !important; }
+  .opp-arizona-state { background: #8C1D40 !important; color: #FFC627 !important; }
+  .opp-alaska { background: #003C71 !important; color: white !important; }
+  .opp-air-force { background: #003087 !important; color: #C0C0C0 !important; }
+  .opp-aic { background: #000000 !important; color: #FFD700 !important; }
+  
+  /* Make sure colored rows still have visible text */
+  .opp-bu td, .opp-northeastern td, .opp-stonehill td, .opp-harvard td, .opp-umass td,
+  .opp-providence td, .opp-unh td, .opp-maine td, .opp-vermont td,
+  .opp-lowell td, .opp-merrimack td, .opp-uconn td, .opp-notre-dame td,
+  .opp-denver td, .opp-michigan td, .opp-michigan-state td, .opp-minnesota td, 
+  .opp-wisconsin td, .opp-north-dakota td, .opp-quinnipiac td, .opp-yale td,
+  .opp-western-michigan td, .opp-st-cloud-state td, .opp-sacred-heart td,
+  .opp-rpi td, .opp-rit td, .opp-northern-michigan td, .opp-new-brunswick td,
+  .opp-minn-duluth td, .opp-michigan-tech td, .opp-miami td, .opp-long-island td,
+  .opp-lake-superior td, .opp-holy-cross td, .opp-dartmouth td, .opp-colorado-college td,
+  .opp-clarkson td, .opp-brown td, .opp-bowling-green td, .opp-bentley td,
+  .opp-army td, .opp-arizona-state td, .opp-alaska td, .opp-air-force td, .opp-aic td {
+    color: inherit !important;
+    border-bottom: 1px solid rgba(255,255,255,0.2) !important;
+  }
+
+  @media (max-width: 768px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    table {
+      font-size: 0.85rem;
+    }
+    
+    th, td {
+      padding: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>BC Hockey Game Tracker</h1>
+    <div class="stats-summary" id="headerStats"></div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('add-game')">Add Game</div>
+    <div class="tab" onclick="switchTab('game-log')">Game Log</div>
+    <div class="tab" onclick="switchTab('by-opponent')">By Opponent</div>
+    <div class="tab" onclick="switchTab('by-arena')">By Arena</div>
+    <div class="tab" onclick="switchTab('by-state')">By State</div>
+    <div class="tab" onclick="switchTab('by-season')">By Season</div>
+    <div class="tab" onclick="switchTab('by-tournament')">By Tournament</div>
+    <div class="tab" onclick="switchTab('calendar-stats')">Calendar Stats</div>
+    <div class="tab" onclick="switchTab('fun-facts')">Fun Facts</div>
+    <div class="tab" onclick="switchTab('import-export')">Import/Export</div>
+  </div>
+
+  <!-- Add Game Tab -->
+  <div id="add-game" class="tab-content active">
+    <div class="form-section">
+      <h2 style="margin-bottom: 20px;">Add New Game</h2>
+      <form id="gameForm">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Date *</label>
+            <input type="date" id="date" required>
+          </div>
+          <div class="form-group">
+            <label>Opponent *</label>
+            <input type="text" id="opponent" required placeholder="e.g., UMass">
+          </div>
+          <div class="form-group">
+            <label>Arena/Location *</label>
+            <input type="text" id="location" required placeholder="e.g., Conte Forum">
+          </div>
+          <div class="form-group">
+            <label>State *</label>
+            <input type="text" id="state" required placeholder="e.g., MA" list="stateSuggestions">
+            <datalist id="stateSuggestions">
+              <option value="MA">Massachusetts</option>
+              <option value="NH">New Hampshire</option>
+              <option value="VT">Vermont</option>
+              <option value="ME">Maine</option>
+              <option value="CT">Connecticut</option>
+              <option value="RI">Rhode Island</option>
+              <option value="NY">New York</option>
+              <option value="PA">Pennsylvania</option>
+              <option value="NJ">New Jersey</option>
+              <option value="MI">Michigan</option>
+              <option value="MN">Minnesota</option>
+              <option value="WI">Wisconsin</option>
+              <option value="ND">North Dakota</option>
+              <option value="CO">Colorado</option>
+              <option value="AK">Alaska</option>
+              <option value="Canada">Canada</option>
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label>Season *</label>
+            <input type="text" id="season" required placeholder="e.g., 2024-2025">
+          </div>
+          <div class="form-group">
+            <label>BC Score *</label>
+            <input type="number" id="bcScore" required min="0">
+          </div>
+          <div class="form-group">
+            <label>Opponent Score *</label>
+            <input type="number" id="oppScore" required min="0">
+          </div>
+          <div class="form-group">
+            <label>Tournament (optional)</label>
+            <input type="text" id="tournament" placeholder="e.g., Beanpot, Hockey East Tournament">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Notes (optional)</label>
+          <textarea id="notes" rows="3" placeholder="Additional notes about the game..."></textarea>
+        </div>
+        <button type="submit" class="btn">Add Game</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Game Log Tab -->
+  <div id="game-log" class="tab-content">
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">Game Log</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="gameLogSortBy" onchange="updateGameLog()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="date-newest">Date (Newest First)</option>
+            <option value="date-oldest">Date (Oldest First)</option>
+            <option value="opponent">Opponent (A-Z)</option>
+            <option value="venue">Venue (A-Z)</option>
+            <option value="state">State (A-Z)</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="gameLogTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Opponent</th>
+              <th>Location</th>
+              <th>State</th>
+              <th>Season</th>
+              <th>Tournament</th>
+              <th>Score</th>
+              <th>Result</th>
+              <th>Notes</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="gameLogBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- By Opponent Tab -->
+  <div id="by-opponent" class="tab-content">
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">By Opponent</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="opponentSortBy" onchange="updateByOpponent()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="name">Opponent Name</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="opponentTable">
+          <thead>
+            <tr>
+              <th>Opponent</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="opponentBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- By Arena Tab -->
+  <div id="by-arena" class="tab-content">
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">By Arena</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="arenaSortBy" onchange="updateByArena()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="name">Arena Name</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="arenaTable">
+          <thead>
+            <tr>
+              <th>Arena</th>
+              <th>State</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="arenaBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- By State Tab -->
+  <div id="by-state" class="tab-content">
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">By State</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="stateSortBy" onchange="updateByState()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="name">State Name</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="stateTable">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="stateBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- By Season Tab -->
+  <div id="by-season" class="tab-content">
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">By Season</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="seasonSortBy" onchange="updateBySeason()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="season">Season</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="seasonTable">
+          <thead>
+            <tr>
+              <th>Season</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="seasonBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- By Tournament Tab -->
+  <div id="by-tournament" class="tab-content">
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">By Tournament</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="tournamentSortBy" onchange="updateByTournament()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="name">Tournament Name</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table id="tournamentTable">
+          <thead>
+            <tr>
+              <th>Tournament</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="tournamentBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Stats Tab -->
+  <div id="calendar-stats" class="tab-content">
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">Calendar Year Stats</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="yearSortBy" onchange="updateCalendarStats()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="year">Year</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Year</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="yearStatsBody">
+            <tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">Month Stats</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="monthSortBy" onchange="updateCalendarStats()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="month">Month</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="monthStatsBody">
+            <tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+        <h2 style="margin: 0;">Day of Week Stats</h2>
+        <div>
+          <label style="margin-right: 10px; font-weight: 600;">Sort by:</label>
+          <select id="dayOfWeekSortBy" onchange="updateCalendarStats()" style="padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+            <option value="day">Day of Week</option>
+            <option value="games">Total Games</option>
+            <option value="wins">Wins</option>
+            <option value="losses">Losses</option>
+            <option value="ties">Ties</option>
+            <option value="winPct">Win %</option>
+          </select>
+        </div>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Day of Week</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>Total</th>
+              <th>Win %</th>
+            </tr>
+          </thead>
+          <tbody id="dayOfWeekStatsBody">
+            <tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fun Facts Tab -->
+  <div id="fun-facts" class="tab-content">
+    <div class="stats-grid" id="funFactsGrid"></div>
+  </div>
+
+  <!-- Import/Export Tab -->
+  <div id="import-export" class="tab-content">
+    <div class="form-section">
+      <h2 style="margin-bottom: 20px;">Import Games</h2>
+      <p style="margin-bottom: 15px;">Paste CSV or tab-separated data. Expected format:</p>
+      <p style="margin-bottom: 15px; font-family: monospace; background: #f0f0f0; padding: 10px; border-radius: 4px;">
+        Season, Date, Opponent, Location, State, BC Score, Opponent Score, Tournament, Notes
+      </p>
+      <textarea id="importData" rows="10" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace;"></textarea>
+      <div style="margin-top: 15px;">
+        <button onclick="importGames()" class="btn">Import Games</button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2 style="margin-bottom: 20px;">Export Games</h2>
+      <p style="margin-bottom: 15px;">Copy all game data as CSV:</p>
+      <textarea id="exportData" rows="10" readonly style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-family: monospace;"></textarea>
+      <div style="margin-top: 15px;">
+        <button onclick="exportGames()" class="btn">Generate Export</button>
+        <button onclick="copyExport()" class="btn btn-secondary">Copy to Clipboard</button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2 style="margin-bottom: 20px;">Data Management</h2>
+      <button onclick="fixDataTypos()" class="btn btn-secondary">Fix Common Typos</button>
+      <button onclick="clearAllData()" class="btn btn-delete" style="margin-left: 10px;">Clear All Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Fun Facts Top 10 -->
+<div id="funFactModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeFunFactModal()">&times;</button>
+    <h2 id="modalTitle"></h2>
+    <ul id="modalList" style="list-style: none; padding: 0;"></ul>
+  </div>
+</div>
+
+<!-- Modal for Editing Games -->
+<div id="editGameModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeEditModal()">&times;</button>
+    <h2>Edit Game</h2>
+    <form id="editGameForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="editDate" required>
+        </div>
+        <div class="form-group">
+          <label>Opponent *</label>
+          <input type="text" id="editOpponent" required>
+        </div>
+        <div class="form-group">
+          <label>Arena/Location *</label>
+          <input type="text" id="editLocation" required>
+        </div>
+        <div class="form-group">
+          <label>State *</label>
+          <input type="text" id="editState" required placeholder="e.g., MA" list="editStateSuggestions">
+          <datalist id="editStateSuggestions">
+            <option value="MA">Massachusetts</option>
+            <option value="NH">New Hampshire</option>
+            <option value="VT">Vermont</option>
+            <option value="ME">Maine</option>
+            <option value="CT">Connecticut</option>
+            <option value="RI">Rhode Island</option>
+            <option value="NY">New York</option>
+            <option value="PA">Pennsylvania</option>
+            <option value="NJ">New Jersey</option>
+            <option value="MI">Michigan</option>
+            <option value="MN">Minnesota</option>
+            <option value="WI">Wisconsin</option>
+            <option value="ND">North Dakota</option>
+            <option value="CO">Colorado</option>
+            <option value="AK">Alaska</option>
+            <option value="Canada">Canada</option>
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label>Season *</label>
+          <input type="text" id="editSeason" required>
+        </div>
+        <div class="form-group">
+          <label>BC Score *</label>
+          <input type="number" id="editBcScore" required min="0">
+        </div>
+        <div class="form-group">
+          <label>Opponent Score *</label>
+          <input type="number" id="editOppScore" required min="0">
+        </div>
+        <div class="form-group">
+          <label>Tournament (optional)</label>
+          <input type="text" id="editTournament">
+        </div>
+      </div>
+      <div class="form-group" style="margin: 20px 0;">
+        <label>Notes (optional)</label>
+        <textarea id="editNotes" rows="3"></textarea>
+      </div>
+      <input type="hidden" id="editGameId">
+      <button type="submit" class="btn">Save Changes</button>
+      <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+    </form>
+  </div>
+</div>
+
+
+<script type="module">
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔥 FIREBASE CONFIGURATION - PASTE YOUR VALUES HERE
+// ═══════════════════════════════════════════════════════════════════════════
+
+const firebaseConfig = {
+apiKey: "AIzaSyDybiu_POxJl-9Tp21XCI2RyLL8u13w0Uc",
+authDomain: "bchockeytracker.firebaseapp.com",
+projectId: "bchockeytracker",
+storageBucket: "bchockeytracker.firebasestorage.app",
+messagingSenderId: "964802805646",
+appId: "1:964802805646:web:0e034b69a6ec421b0c6edf"
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Import Firebase
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+
+// Initialize Firebase
+let db;
+let gamesRef;
+let isFirebaseEnabled = false;
+
+try {
+  // Check if config has been updated
+  if (firebaseConfig.apiKey !== "YOUR-API-KEY-HERE") {
+    const app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    gamesRef = ref(db, 'games');
+    isFirebaseEnabled = true;
+    console.log('✅ Firebase connected! Your games will sync across devices.');
+    
+    // Listen for real-time updates from other devices
+    onValue(gamesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data && JSON.stringify(data) !== JSON.stringify(window.games)) {
+        window.games = data;
+        window.updateAllViews();
+        console.log('🔄 Data synced from cloud');
+      }
+    });
+  } else {
+    console.log('ℹ️ Firebase not configured. Using local storage only.');
+    console.log('To enable cloud sync, add your Firebase config at the top of this file.');
+  }
+} catch (error) {
+  console.error('❌ Firebase error:', error);
+  isFirebaseEnabled = false;
+}
+
+// Override saveGames to use Firebase
+window.originalSaveGames = window.saveGames;
+window.saveGames = async function() {
+  if (isFirebaseEnabled && db && gamesRef) {
+    try {
+      await set(gamesRef, window.games);
+      console.log('💾 Saved to cloud');
+      // Also save to localStorage as backup
+      localStorage.setItem('bcHockeyGames', JSON.stringify(window.games));
+    } catch (error) {
+      console.error('Save error:', error);
+      // Fallback to localStorage
+      localStorage.setItem('bcHockeyGames', JSON.stringify(window.games));
+    }
+  } else {
+    // Use localStorage
+    localStorage.setItem('bcHockeyGames', JSON.stringify(window.games));
+  }
+};
+
+// Override loadGames to use Firebase
+window.originalLoadGames = window.loadGames;
+window.loadGames = async function() {
+  if (isFirebaseEnabled && db && gamesRef) {
+    try {
+      const snapshot = await get(gamesRef);
+      if (snapshot.exists()) {
+        window.games = snapshot.val();
+        console.log('📥 Loaded from cloud (' + window.games.length + ' games)');
+      } else {
+        // Check localStorage for migration
+        const localData = localStorage.getItem('bcHockeyGames');
+        if (localData) {
+          window.games = JSON.parse(localData);
+          await set(gamesRef, window.games);
+          console.log('📤 Migrated ' + window.games.length + ' games from local storage to cloud');
+        }
+      }
+    } catch (error) {
+      console.error('Load error:', error);
+      // Fallback to localStorage
+      const stored = localStorage.getItem('bcHockeyGames');
+      if (stored) window.games = JSON.parse(stored);
+    }
+  } else {
+    // Use localStorage
+    const stored = localStorage.getItem('bcHockeyGames');
+    if (stored) window.games = JSON.parse(stored);
+  }
+  window.updateAllViews();
+};
+</script>
+
+<script>
+let games = [];
+
+// Load games from localStorage on page load
+function loadGames() {
+  const stored = localStorage.getItem('bcHockeyGames');
+  if (stored) {
+    games = JSON.parse(stored);
+  }
+  updateAllViews();
+}
+
+function saveGames() {
+  localStorage.setItem('bcHockeyGames', JSON.stringify(games));
+}
+
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.remove('active');
+  });
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  document.getElementById(tabName).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Add game form submission
+document.getElementById('gameForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  const date = document.getElementById('date').value;
+  const opponent = document.getElementById('opponent').value;
+  const location = document.getElementById('location').value;
+  const state = document.getElementById('state').value;
+  const season = document.getElementById('season').value;
+  const bcScore = parseInt(document.getElementById('bcScore').value);
+  const oppScore = parseInt(document.getElementById('oppScore').value);
+  const tournament = document.getElementById('tournament').value.trim();
+  const notes = document.getElementById('notes').value.trim();
+  
+  const game = {
+    id: Date.now(),
+    date,
+    opponent,
+    location,
+    state,
+    season,
+    bcScore,
+    oppScore,
+    tournament,
+    result: bcScore > oppScore ? 'W' : bcScore < oppScore ? 'L' : 'T',
+    notes
+  };
+  
+  games.push(game);
+  saveGames();
+  updateAllViews();
+  
+  document.getElementById('gameForm').reset();
+  alert('Game added successfully!');
+});
+
+// Edit game form submission
+document.getElementById('editGameForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  
+  const gameId = parseInt(document.getElementById('editGameId').value);
+  const gameIndex = games.findIndex(g => g.id === gameId);
+  
+  if (gameIndex === -1) {
+    alert('Error: Game not found');
+    return;
+  }
+  
+  const date = document.getElementById('editDate').value;
+  const opponent = document.getElementById('editOpponent').value;
+  const location = document.getElementById('editLocation').value;
+  const state = document.getElementById('editState').value;
+  const season = document.getElementById('editSeason').value;
+  const bcScore = parseInt(document.getElementById('editBcScore').value);
+  const oppScore = parseInt(document.getElementById('editOppScore').value);
+  const tournament = document.getElementById('editTournament').value.trim();
+  const notes = document.getElementById('editNotes').value.trim();
+  
+  games[gameIndex] = {
+    ...games[gameIndex],
+    date,
+    opponent,
+    location,
+    state,
+    season,
+    bcScore,
+    oppScore,
+    tournament,
+    result: bcScore > oppScore ? 'W' : bcScore < oppScore ? 'L' : 'T',
+    notes
+  };
+  
+  saveGames();
+  updateAllViews();
+  closeEditModal();
+  alert('Game updated successfully!');
+});
+
+function openEditModal(gameId) {
+  const game = games.find(g => g.id === gameId);
+  if (!game) {
+    alert('Error: Game not found');
+    return;
+  }
+  
+  document.getElementById('editGameId').value = game.id;
+  document.getElementById('editDate').value = game.date;
+  document.getElementById('editOpponent').value = game.opponent;
+  document.getElementById('editLocation').value = game.location;
+  document.getElementById('editState').value = game.state;
+  document.getElementById('editSeason').value = game.season;
+  document.getElementById('editBcScore').value = game.bcScore;
+  document.getElementById('editOppScore').value = game.oppScore;
+  document.getElementById('editTournament').value = game.tournament || '';
+  document.getElementById('editNotes').value = game.notes || '';
+  
+  document.getElementById('editGameModal').classList.add('active');
+}
+
+function closeEditModal() {
+  document.getElementById('editGameModal').classList.remove('active');
+  document.getElementById('editGameForm').reset();
+}
+
+function deleteGame(id) {
+  if (confirm('Are you sure you want to delete this game?')) {
+    games = games.filter(g => g.id !== id);
+    saveGames();
+    updateAllViews();
+  }
+}
+
+function getOpponentClass(opponent) {
+  const oppLower = opponent.toLowerCase().replace(/[^a-z]/g, '');
+  const colorMap = {
+    'bu': 'opp-bu',
+    'bostonuniversity': 'opp-bu',
+    'northeastern': 'opp-northeastern',
+    'stonehill': 'opp-stonehill',
+    'harvard': 'opp-harvard',
+    'umass': 'opp-umass',
+    'providence': 'opp-providence',
+    'unh': 'opp-unh',
+    'newhampshire': 'opp-unh',
+    'maine': 'opp-maine',
+    'vermont': 'opp-vermont',
+    'lowell': 'opp-lowell',
+    'umasslowell': 'opp-lowell',
+    'merrimack': 'opp-merrimack',
+    'uconn': 'opp-uconn',
+    'connecticut': 'opp-uconn',
+    'notredame': 'opp-notre-dame',
+    'denver': 'opp-denver',
+    'michiganstate': 'opp-michigan-state',
+    'michigan': 'opp-michigan',
+    'minnesota': 'opp-minnesota',
+    'wisconsin': 'opp-wisconsin',
+    'northdakota': 'opp-north-dakota',
+    'quinnipiac': 'opp-quinnipiac',
+    'yale': 'opp-yale',
+    'westernmichigan': 'opp-western-michigan',
+    'stcloudstate': 'opp-st-cloud-state',
+    'sacredheart': 'opp-sacred-heart',
+    'rpi': 'opp-rpi',
+    'rit': 'opp-rit',
+    'northernmichigan': 'opp-northern-michigan',
+    'northernmich': 'opp-northern-michigan',
+    'newbrunswick': 'opp-new-brunswick',
+    'minnduluth': 'opp-minn-duluth',
+    'minnesotaduluth': 'opp-minn-duluth',
+    'michigantech': 'opp-michigan-tech',
+    'miami': 'opp-miami',
+    'longisland': 'opp-long-island',
+    'lakesuperiorstate': 'opp-lake-superior',
+    'lakesuperior': 'opp-lake-superior',
+    'holycross': 'opp-holy-cross',
+    'dartmouth': 'opp-dartmouth',
+    'coloradocollege': 'opp-colorado-college',
+    'clarkson': 'opp-clarkson',
+    'brown': 'opp-brown',
+    'bowlinggreen': 'opp-bowling-green',
+    'bentley': 'opp-bentley',
+    'army': 'opp-army',
+    'arizonastate': 'opp-arizona-state',
+    'alaska': 'opp-alaska',
+    'airforce': 'opp-air-force',
+    'aic': 'opp-aic'
+  };
+  return colorMap[oppLower] || '';
+}
+
+function updateAllViews() {
+  updateHeaderStats();
+  updateGameLog();
+  updateByOpponent();
+  updateByArena();
+  updateByState();
+  updateBySeason();
+  updateByTournament();
+  updateCalendarStats();
+  updateFunFacts();
+  updateExport();
+}
+
+function updateHeaderStats() {
+  const totalGames = games.length;
+  const wins = games.filter(g => g.result === 'W').length;
+  const losses = games.filter(g => g.result === 'L').length;
+  const ties = games.filter(g => g.result === 'T').length;
+  
+  let record = `${wins}-${losses}`;
+  if (ties > 0) record += `-${ties}`;
+  
+  const winPct = totalGames > 0 ? ((wins / totalGames) * 100).toFixed(1) : 0;
+  
+  const uniqueVenues = new Set(games.map(g => g.location)).size;
+  const uniqueOpponents = new Set(games.map(g => g.opponent)).size;
+  
+  const goalsScored = games.reduce((sum, g) => sum + g.bcScore, 0);
+  const goalsAllowed = games.reduce((sum, g) => sum + g.oppScore, 0);
+  
+  document.getElementById('headerStats').innerHTML = `
+    <div class="stat-item">
+      <div class="stat-label">Total Games</div>
+      <div class="stat-value">${totalGames}</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Record</div>
+      <div class="stat-value">${record}</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Win %</div>
+      <div class="stat-value">${winPct}%</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Venues</div>
+      <div class="stat-value">${uniqueVenues}</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Opponents</div>
+      <div class="stat-value">${uniqueOpponents}</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Goals For</div>
+      <div class="stat-value">${goalsScored}</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Goals Against</div>
+      <div class="stat-value">${goalsAllowed}</div>
+    </div>
+  `;
+}
+
+function formatDateString(dateStr) {
+  if (!dateStr) return 'N/A';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const [year, month, day] = parts;
+  return `${month}/${day}/${year}`;
+}
+
+function updateGameLog() {
+  const tbody = document.getElementById('gameLogBody');
+  
+  if (games.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    return;
+  }
+  
+  let sortedGames = [...games];
+  const sortBy = document.getElementById('gameLogSortBy').value;
+  
+  switch(sortBy) {
+    case 'date-newest':
+      sortedGames.sort((a, b) => new Date(b.date) - new Date(a.date));
+      break;
+    case 'date-oldest':
+      sortedGames.sort((a, b) => new Date(a.date) - new Date(b.date));
+      break;
+    case 'opponent':
+      sortedGames.sort((a, b) => a.opponent.localeCompare(b.opponent));
+      break;
+    case 'venue':
+      sortedGames.sort((a, b) => a.location.localeCompare(b.location));
+      break;
+    case 'state':
+      sortedGames.sort((a, b) => {
+        const stateA = a.state || 'ZZZ';
+        const stateB = b.state || 'ZZZ';
+        return stateA.localeCompare(stateB);
+      });
+      break;
+  }
+  
+  tbody.innerHTML = sortedGames.map(game => {
+    const oppClass = getOpponentClass(game.opponent);
+    return `
+    <tr class="${oppClass}">
+      <td>${formatDateString(game.date)}</td>
+      <td>${game.opponent}</td>
+      <td>${game.location}</td>
+      <td>${game.state || '-'}</td>
+      <td>${game.season}</td>
+      <td>${game.tournament || '-'}</td>
+      <td>${game.bcScore}-${game.oppScore}</td>
+      <td class="result-${game.result}">${game.result}</td>
+      <td style="max-width: 200px; font-size: 0.9rem;">${game.notes || '-'}</td>
+      <td class="actions">
+        <button class="btn-small btn-edit" onclick="openEditModal(${game.id})">Edit</button>
+        <button class="btn-small btn-delete" onclick="deleteGame(${game.id})">Delete</button>
+      </td>
+    </tr>
+  `}).join('');
+}
+
+function calculateStats(gamesList) {
+  const total = gamesList.length;
+  const wins = gamesList.filter(g => g.result === 'W').length;
+  const losses = gamesList.filter(g => g.result === 'L').length;
+  const ties = gamesList.filter(g => g.result === 'T').length;
+  
+  const winPct = total > 0 ? ((wins + ties * 0.5) / total * 100).toFixed(1) : 0;
+  
+  return { total, W: wins, L: losses, T: ties, winPct: parseFloat(winPct) };
+}
+
+function updateByOpponent() {
+  const tbody = document.getElementById('opponentBody');
+  
+  if (games.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    return;
+  }
+  
+  const byOpponent = {};
+  games.forEach(game => {
+    if (!byOpponent[game.opponent]) byOpponent[game.opponent] = [];
+    byOpponent[game.opponent].push(game);
+  });
+  
+  let rows = Object.entries(byOpponent)
+    .map(([opponent, gamesList]) => {
+      const stats = calculateStats(gamesList);
+      return { opponent, ...stats };
+    });
+  
+  const sortBy = document.getElementById('opponentSortBy').value;
+  switch(sortBy) {
+    case 'name':
+      rows.sort((a, b) => a.opponent.localeCompare(b.opponent));
+      break;
+    case 'games':
+      rows.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      rows.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      rows.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      rows.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      rows.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  tbody.innerHTML = rows.map(row => {
+    const oppClass = getOpponentClass(row.opponent);
+    return `
+    <tr class="${oppClass}">
+      <td><strong>${row.opponent}</strong></td>
+      <td class="result-W">${row.W}</td>
+      <td class="result-L">${row.L}</td>
+      <td class="result-T">${row.T}</td>
+      <td>${row.total}</td>
+      <td>${row.winPct}%</td>
+    </tr>
+  `}).join('');
+}
+
+function updateByArena() {
+  const tbody = document.getElementById('arenaBody');
+  
+  if (games.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    return;
+  }
+  
+  const byArena = {};
+  games.forEach(game => {
+    const key = `${game.location}|${game.state}`;
+    if (!byArena[key]) byArena[key] = [];
+    byArena[key].push(game);
+  });
+  
+  let rows = Object.entries(byArena)
+    .map(([key, gamesList]) => {
+      const [location, state] = key.split('|');
+      const stats = calculateStats(gamesList);
+      return { location, state, ...stats };
+    });
+  
+  const sortBy = document.getElementById('arenaSortBy').value;
+  switch(sortBy) {
+    case 'name':
+      rows.sort((a, b) => a.location.localeCompare(b.location));
+      break;
+    case 'games':
+      rows.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      rows.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      rows.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      rows.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      rows.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  tbody.innerHTML = rows.map(row => `
+    <tr>
+      <td><strong>${row.location}</strong></td>
+      <td>${row.state}</td>
+      <td class="result-W">${row.W}</td>
+      <td class="result-L">${row.L}</td>
+      <td class="result-T">${row.T}</td>
+      <td>${row.total}</td>
+      <td>${row.winPct}%</td>
+    </tr>
+  `).join('');
+}
+
+function updateByState() {
+  const tbody = document.getElementById('stateBody');
+  
+  if (games.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    return;
+  }
+  
+  const byState = {};
+  games.forEach(game => {
+    const fullStateName = getFullStateName(game.state);
+    if (!byState[fullStateName]) byState[fullStateName] = [];
+    byState[fullStateName].push(game);
+  });
+  
+  let rows = Object.entries(byState)
+    .map(([state, gamesList]) => {
+      const stats = calculateStats(gamesList);
+      return { state, ...stats };
+    });
+  
+  const sortBy = document.getElementById('stateSortBy').value;
+  switch(sortBy) {
+    case 'name':
+      rows.sort((a, b) => a.state.localeCompare(b.state));
+      break;
+    case 'games':
+      rows.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      rows.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      rows.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      rows.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      rows.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  tbody.innerHTML = rows.map(row => `
+    <tr>
+      <td><strong>${row.state}</strong></td>
+      <td class="result-W">${row.W}</td>
+      <td class="result-L">${row.L}</td>
+      <td class="result-T">${row.T}</td>
+      <td>${row.total}</td>
+      <td>${row.winPct}%</td>
+    </tr>
+  `).join('');
+}
+
+function updateBySeason() {
+  const tbody = document.getElementById('seasonBody');
+  
+  if (games.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    return;
+  }
+  
+  const bySeason = {};
+  games.forEach(game => {
+    if (!bySeason[game.season]) bySeason[game.season] = [];
+    bySeason[game.season].push(game);
+  });
+  
+  let rows = Object.entries(bySeason)
+    .map(([season, gamesList]) => {
+      const stats = calculateStats(gamesList);
+      return { season, ...stats };
+    });
+  
+  const sortBy = document.getElementById('seasonSortBy').value;
+  switch(sortBy) {
+    case 'season':
+      rows.sort((a, b) => b.season.localeCompare(a.season));
+      break;
+    case 'games':
+      rows.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      rows.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      rows.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      rows.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      rows.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  tbody.innerHTML = rows.map(row => `
+    <tr>
+      <td><strong>${row.season}</strong></td>
+      <td class="result-W">${row.W}</td>
+      <td class="result-L">${row.L}</td>
+      <td class="result-T">${row.T}</td>
+      <td>${row.total}</td>
+      <td>${row.winPct}%</td>
+    </tr>
+  `).join('');
+}
+
+function updateByTournament() {
+  const tbody = document.getElementById('tournamentBody');
+  const byTournament = {};
+  
+  games.forEach(game => {
+    if (game.tournament && game.tournament.trim()) {
+      const tournament = game.tournament.trim();
+      if (!byTournament[tournament]) byTournament[tournament] = [];
+      byTournament[tournament].push(game);
+    }
+  });
+  
+  let rows = Object.entries(byTournament)
+    .map(([tournament, gamesList]) => {
+      const stats = calculateStats(gamesList);
+      return { tournament, ...stats };
+    });
+  
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No tournament games recorded yet.</td></tr>';
+    return;
+  }
+  
+  const sortBy = document.getElementById('tournamentSortBy').value;
+  switch(sortBy) {
+    case 'name':
+      rows.sort((a, b) => a.tournament.localeCompare(b.tournament));
+      break;
+    case 'games':
+      rows.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      rows.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      rows.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      rows.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      rows.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  tbody.innerHTML = rows.map(row => `
+    <tr>
+      <td><strong>${row.tournament}</strong></td>
+      <td class="result-W">${row.W}</td>
+      <td class="result-L">${row.L}</td>
+      <td class="result-T">${row.T}</td>
+      <td>${row.total}</td>
+      <td>${row.winPct}%</td>
+    </tr>
+  `).join('');
+}
+
+function getFullStateName(abbr) {
+  const stateMap = {
+    'MA': 'Massachusetts',
+    'NH': 'New Hampshire',
+    'VT': 'Vermont',
+    'CT': 'Connecticut',
+    'RI': 'Rhode Island',
+    'ME': 'Maine',
+    'NY': 'New York',
+    'PA': 'Pennsylvania',
+    'NJ': 'New Jersey',
+    'MI': 'Michigan',
+    'MN': 'Minnesota',
+    'WI': 'Wisconsin',
+    'ND': 'North Dakota',
+    'CO': 'Colorado',
+    'AZ': 'Arizona',
+    'AK': 'Alaska',
+    'IN': 'Indiana',
+    'FL': 'Florida',
+    'NV': 'Nevada',
+    'OH': 'Ohio',
+    'IL': 'Illinois',
+    'Canada': 'Canada'
+  };
+  return stateMap[abbr] || abbr;
+}
+
+function updateCalendarStats() {
+  // Calendar Year Stats
+  const yearBody = document.getElementById('yearStatsBody');
+  const monthBody = document.getElementById('monthStatsBody');
+  const dayBody = document.getElementById('dayOfWeekStatsBody');
+  
+  if (games.length === 0) {
+    yearBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    monthBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    dayBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No games recorded yet.</td></tr>';
+    return;
+  }
+  
+  // Helper function to get date parts without timezone issues
+  function getDateParts(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return { year, month: month - 1, day };
+  }
+  
+  // Year Stats
+  const yearMap = {};
+  games.forEach(game => {
+    const { year } = getDateParts(game.date);
+    if (!yearMap[year]) yearMap[year] = { W: 0, L: 0, T: 0 };
+    yearMap[year][game.result]++;
+  });
+  
+  let yearEntries = Object.entries(yearMap).map(([year, record]) => {
+    const total = record.W + record.L + record.T;
+    const winPct = ((record.W + record.T * 0.5) / total * 100).toFixed(1);
+    return { year: parseInt(year), W: record.W, L: record.L, T: record.T, total, winPct: parseFloat(winPct) };
+  });
+  
+  const yearSortBy = document.getElementById('yearSortBy').value;
+  switch(yearSortBy) {
+    case 'year':
+      yearEntries.sort((a, b) => b.year - a.year);
+      break;
+    case 'games':
+      yearEntries.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      yearEntries.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      yearEntries.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      yearEntries.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      yearEntries.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  yearBody.innerHTML = yearEntries.map(e => `
+    <tr>
+      <td><strong>${e.year}</strong></td>
+      <td class="result-W">${e.W}</td>
+      <td class="result-L">${e.L}</td>
+      <td class="result-T">${e.T}</td>
+      <td>${e.total}</td>
+      <td>${e.winPct}%</td>
+    </tr>
+  `).join('');
+  
+  // Month Stats
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthMap = {};
+  games.forEach(game => {
+    const { month } = getDateParts(game.date);
+    const monthName = monthNames[month];
+    if (!monthMap[monthName]) monthMap[monthName] = { W: 0, L: 0, T: 0, monthNum: month };
+    monthMap[monthName][game.result]++;
+  });
+  
+  let monthEntries = Object.entries(monthMap).map(([month, record]) => {
+    const total = record.W + record.L + record.T;
+    const winPct = ((record.W + record.T * 0.5) / total * 100).toFixed(1);
+    return { month, monthNum: record.monthNum, W: record.W, L: record.L, T: record.T, total, winPct: parseFloat(winPct) };
+  });
+  
+  const monthSortBy = document.getElementById('monthSortBy').value;
+  switch(monthSortBy) {
+    case 'month':
+      monthEntries.sort((a, b) => a.monthNum - b.monthNum);
+      break;
+    case 'games':
+      monthEntries.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      monthEntries.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      monthEntries.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      monthEntries.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      monthEntries.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  monthBody.innerHTML = monthEntries.map(e => `
+    <tr>
+      <td><strong>${e.month}</strong></td>
+      <td class="result-W">${e.W}</td>
+      <td class="result-L">${e.L}</td>
+      <td class="result-T">${e.T}</td>
+      <td>${e.total}</td>
+      <td>${e.winPct}%</td>
+    </tr>
+  `).join('');
+  
+  // Day of Week Stats
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayMap = {};
+  games.forEach(game => {
+    const date = new Date(game.date + 'T00:00:00');
+    const dayName = dayNames[date.getDay()];
+    if (!dayMap[dayName]) dayMap[dayName] = { W: 0, L: 0, T: 0, dayNum: date.getDay() };
+    dayMap[dayName][game.result]++;
+  });
+  
+  let dayEntries = Object.entries(dayMap).map(([day, record]) => {
+    const total = record.W + record.L + record.T;
+    const winPct = ((record.W + record.T * 0.5) / total * 100).toFixed(1);
+    return { day, dayNum: record.dayNum, W: record.W, L: record.L, T: record.T, total, winPct: parseFloat(winPct) };
+  });
+  
+  const daySortBy = document.getElementById('dayOfWeekSortBy').value;
+  switch(daySortBy) {
+    case 'day':
+      dayEntries.sort((a, b) => a.dayNum - b.dayNum);
+      break;
+    case 'games':
+      dayEntries.sort((a, b) => b.total - a.total);
+      break;
+    case 'wins':
+      dayEntries.sort((a, b) => b.W - a.W);
+      break;
+    case 'losses':
+      dayEntries.sort((a, b) => b.L - a.L);
+      break;
+    case 'ties':
+      dayEntries.sort((a, b) => b.T - a.T);
+      break;
+    case 'winPct':
+      dayEntries.sort((a, b) => b.winPct - a.winPct);
+      break;
+  }
+  
+  dayBody.innerHTML = dayEntries.map(e => `
+    <tr>
+      <td><strong>${e.day}</strong></td>
+      <td class="result-W">${e.W}</td>
+      <td class="result-L">${e.L}</td>
+      <td class="result-T">${e.T}</td>
+      <td>${e.total}</td>
+      <td>${e.winPct}%</td>
+    </tr>
+  `).join('');
+}
+
+
+function updateFunFacts() {
+  if (games.length === 0) {
+    document.getElementById('funFactsGrid').innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 30px;">Add some games to see fun facts!</p>';
+    return;
+  }
+
+  const allStreaks = calculateAllStreaks();
+  window.allStreaks = allStreaks;
+  
+  const top5WinStreaks = allStreaks.winStreaks.slice(0, 5);
+  const top5LossStreaks = allStreaks.lossStreaks.slice(0, 5);
+  const top5UndefeatedStreaks = allStreaks.undefeatedStreaks.slice(0, 5);
+  const top5WinlessStreaks = allStreaks.winlessStreaks.slice(0, 5);
+
+  const sortedByTotal = [...games].sort((a, b) => (b.bcScore + b.oppScore) - (a.bcScore + a.oppScore));
+  const highestScoring = sortedByTotal[0];
+
+  const victories = games.filter(g => g.result === 'W');
+  const biggestVictory = victories.length > 0 ? 
+    victories.sort((a, b) => (b.bcScore - b.oppScore) - (a.bcScore - a.oppScore))[0] : null;
+
+  const defeats = games.filter(g => g.result === 'L');
+  const biggestDefeat = defeats.length > 0 ? 
+    defeats.sort((a, b) => (b.oppScore - b.bcScore) - (a.oppScore - a.bcScore))[0] : null;
+
+  const mostBC = [...games].sort((a, b) => b.bcScore - a.bcScore)[0];
+
+  const fewest = [...games].sort((a, b) => (a.bcScore + a.oppScore) - (b.bcScore + b.oppScore))[0];
+
+  document.getElementById('funFactsGrid').innerHTML = `
+    <div class="stat-card stat-card-clickable" onclick="showTop10('combinedGoals')">
+      <h3>Highest-Scoring Game</h3>
+      <div class="stat-row"><span class="stat-label">Game</span><span>BC ${highestScoring.bcScore}-${highestScoring.oppScore} ${highestScoring.opponent}</span></div>
+      <div class="stat-row"><span class="stat-label">Total</span><span>${highestScoring.bcScore + highestScoring.oppScore}</span></div>
+      <div class="stat-row"><span class="stat-label">Date</span><span>${formatDateString(highestScoring.date)}</span></div>
+    </div>
+    ${biggestVictory ? `
+    <div class="stat-card stat-card-clickable" onclick="showTop10('biggestVictory')">
+      <h3>Biggest Victory</h3>
+      <div class="stat-row"><span class="stat-label">Game</span><span>BC ${biggestVictory.bcScore}-${biggestVictory.oppScore} ${biggestVictory.opponent}</span></div>
+      <div class="stat-row"><span class="stat-label">Margin</span><span>+${biggestVictory.bcScore - biggestVictory.oppScore}</span></div>
+      <div class="stat-row"><span class="stat-label">Date</span><span>${formatDateString(biggestVictory.date)}</span></div>
+    </div>
+    ` : ''}
+    ${biggestDefeat ? `
+    <div class="stat-card stat-card-clickable" onclick="showTop10('biggestDefeat')">
+      <h3>Biggest Defeat</h3>
+      <div class="stat-row"><span class="stat-label">Game</span><span>BC ${biggestDefeat.bcScore}-${biggestDefeat.oppScore} ${biggestDefeat.opponent}</span></div>
+      <div class="stat-row"><span class="stat-label">Margin</span><span>-${biggestDefeat.oppScore - biggestDefeat.bcScore}</span></div>
+      <div class="stat-row"><span class="stat-label">Date</span><span>${formatDateString(biggestDefeat.date)}</span></div>
+    </div>
+    ` : ''}
+    <div class="stat-card stat-card-clickable" onclick="showTop10('mostBCGoals')">
+      <h3>Most BC Goals</h3>
+      <div class="stat-row"><span class="stat-label">Game</span><span>BC ${mostBC.bcScore}-${mostBC.oppScore} ${mostBC.opponent}</span></div>
+      <div class="stat-row"><span class="stat-label">BC Goals</span><span>${mostBC.bcScore}</span></div>
+      <div class="stat-row"><span class="stat-label">Date</span><span>${formatDateString(mostBC.date)}</span></div>
+    </div>
+    <div class="stat-card stat-card-clickable" onclick="showTop10('fewestGoals')">
+      <h3>Fewest Combined Goals</h3>
+      <div class="stat-row"><span class="stat-label">Game</span><span>BC ${fewest.bcScore}-${fewest.oppScore} ${fewest.opponent}</span></div>
+      <div class="stat-row"><span class="stat-label">Total</span><span>${fewest.bcScore + fewest.oppScore}</span></div>
+      <div class="stat-row"><span class="stat-label">Date</span><span>${formatDateString(fewest.date)}</span></div>
+    </div>
+    ${top5WinStreaks.length > 0 ? `
+    <div class="stat-card stat-card-clickable" onclick="showStreaks('winStreak')">
+      <h3>Win Streaks (Wins Only)</h3>
+      <div class="stat-row"><span class="stat-label">Longest</span><span>${top5WinStreaks[0].length} games</span></div>
+      <div class="stat-row"><span class="stat-label">Ended</span><span>${formatDateString(top5WinStreaks[0].endGame.date)}</span></div>
+      <div class="stat-row"><span class="stat-label">View All</span><span>Top 15</span></div>
+    </div>
+    ` : ''}
+    ${top5UndefeatedStreaks.length > 0 ? `
+    <div class="stat-card stat-card-clickable" onclick="showStreaks('undefeatedStreak')">
+      <h3>Undefeated Streaks (W/T)</h3>
+      <div class="stat-row"><span class="stat-label">Longest</span><span>${top5UndefeatedStreaks[0].length} games</span></div>
+      <div class="stat-row"><span class="stat-label">Ended</span><span>${formatDateString(top5UndefeatedStreaks[0].endGame.date)}</span></div>
+      <div class="stat-row"><span class="stat-label">View All</span><span>Top 15</span></div>
+    </div>
+    ` : ''}
+    ${top5LossStreaks.length > 0 ? `
+    <div class="stat-card stat-card-clickable" onclick="showStreaks('lossStreak')">
+      <h3>Loss Streaks (Losses Only)</h3>
+      <div class="stat-row"><span class="stat-label">Longest</span><span>${top5LossStreaks[0].length} games</span></div>
+      <div class="stat-row"><span class="stat-label">Ended</span><span>${formatDateString(top5LossStreaks[0].endGame.date)}</span></div>
+      <div class="stat-row"><span class="stat-label">View All</span><span>Top 15</span></div>
+    </div>
+    ` : ''}
+    ${top5WinlessStreaks.length > 0 ? `
+    <div class="stat-card stat-card-clickable" onclick="showStreaks('winlessStreak')">
+      <h3>Winless Streaks (L/T)</h3>
+      <div class="stat-row"><span class="stat-label">Longest</span><span>${top5WinlessStreaks[0].length} games</span></div>
+      <div class="stat-row"><span class="stat-label">Ended</span><span>${formatDateString(top5WinlessStreaks[0].endGame.date)}</span></div>
+      <div class="stat-row"><span class="stat-label">View All</span><span>Top 15</span></div>
+    </div>
+    ` : ''}
+  `;
+}
+
+function calculateAllStreaks() {
+  const sortedGames = [...games].sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  const winStreaks = [];
+  const lossStreaks = [];
+  const undefeatedStreaks = [];
+  const winlessStreaks = [];
+  
+  let currentWinStreak = [];
+  let currentLossStreak = [];
+  let currentUndefeatedStreak = [];
+  let currentWinlessStreak = [];
+  
+  for (let i = 0; i < sortedGames.length; i++) {
+    const game = sortedGames[i];
+    
+    if (game.result === 'W') {
+      currentWinStreak.push(game);
+      currentUndefeatedStreak.push(game);
+      
+      if (currentLossStreak.length > 0) {
+        lossStreaks.push({ games: currentLossStreak, length: currentLossStreak.length, endGame: game });
+        currentLossStreak = [];
+      }
+      if (currentWinlessStreak.length > 0) {
+        winlessStreaks.push({ games: currentWinlessStreak, length: currentWinlessStreak.length, endGame: game });
+        currentWinlessStreak = [];
+      }
+    } else if (game.result === 'L') {
+      currentLossStreak.push(game);
+      currentWinlessStreak.push(game);
+      
+      if (currentWinStreak.length > 0) {
+        winStreaks.push({ games: currentWinStreak, length: currentWinStreak.length, endGame: game });
+        currentWinStreak = [];
+      }
+      if (currentUndefeatedStreak.length > 0) {
+        undefeatedStreaks.push({ games: currentUndefeatedStreak, length: currentUndefeatedStreak.length, endGame: game });
+        currentUndefeatedStreak = [];
+      }
+    } else {
+      currentUndefeatedStreak.push(game);
+      currentWinlessStreak.push(game);
+      
+      if (currentWinStreak.length > 0) {
+        winStreaks.push({ games: currentWinStreak, length: currentWinStreak.length, endGame: game });
+        currentWinStreak = [];
+      }
+      if (currentLossStreak.length > 0) {
+        lossStreaks.push({ games: currentLossStreak, length: currentLossStreak.length, endGame: game });
+        currentLossStreak = [];
+      }
+    }
+  }
+  
+  if (currentWinStreak.length > 0) {
+    winStreaks.push({ games: currentWinStreak, length: currentWinStreak.length, endGame: sortedGames[sortedGames.length - 1] });
+  }
+  if (currentLossStreak.length > 0) {
+    lossStreaks.push({ games: currentLossStreak, length: currentLossStreak.length, endGame: sortedGames[sortedGames.length - 1] });
+  }
+  if (currentUndefeatedStreak.length > 0) {
+    undefeatedStreaks.push({ games: currentUndefeatedStreak, length: currentUndefeatedStreak.length, endGame: sortedGames[sortedGames.length - 1] });
+  }
+  if (currentWinlessStreak.length > 0) {
+    winlessStreaks.push({ games: currentWinlessStreak, length: currentWinlessStreak.length, endGame: sortedGames[sortedGames.length - 1] });
+  }
+  
+  return {
+    winStreaks: winStreaks.sort((a, b) => b.length - a.length),
+    lossStreaks: lossStreaks.sort((a, b) => b.length - a.length),
+    undefeatedStreaks: undefeatedStreaks.sort((a, b) => b.length - a.length),
+    winlessStreaks: winlessStreaks.sort((a, b) => b.length - a.length)
+  };
+}
+
+function showTop10(category) {
+  const modal = document.getElementById('funFactModal');
+  const title = document.getElementById('modalTitle');
+  const list = document.getElementById('modalList');
+  
+  let sortedGames, titleText, valueFormatter;
+  
+  switch(category) {
+    case 'combinedGoals':
+      titleText = 'Top 15 Highest-Scoring Games';
+      sortedGames = [...games].sort((a, b) => (b.bcScore + b.oppScore) - (a.bcScore + a.oppScore)).slice(0, 15);
+      valueFormatter = (g) => `${g.bcScore + g.oppScore} goals`;
+      break;
+    case 'biggestVictory':
+      titleText = 'Top 15 Biggest Victories';
+      sortedGames = [...games].filter(g => g.result === 'W').sort((a, b) => (b.bcScore - b.oppScore) - (a.bcScore - a.oppScore)).slice(0, 15);
+      valueFormatter = (g) => `+${g.bcScore - g.oppScore}`;
+      break;
+    case 'biggestDefeat':
+      titleText = 'Top 15 Biggest Defeats';
+      sortedGames = [...games].filter(g => g.result === 'L').sort((a, b) => (b.oppScore - b.bcScore) - (a.oppScore - a.bcScore)).slice(0, 15);
+      valueFormatter = (g) => `-${g.oppScore - g.bcScore}`;
+      break;
+    case 'mostBCGoals':
+      titleText = 'Top 15 Most BC Goals';
+      sortedGames = [...games].sort((a, b) => b.bcScore - a.bcScore).slice(0, 15);
+      valueFormatter = (g) => `${g.bcScore} goals`;
+      break;
+    case 'fewestGoals':
+      titleText = 'Top 15 Lowest-Scoring Games';
+      sortedGames = [...games].sort((a, b) => (a.bcScore + a.oppScore) - (b.bcScore + b.oppScore)).slice(0, 15);
+      valueFormatter = (g) => `${g.bcScore + g.oppScore} goals`;
+      break;
+  }
+  
+  title.textContent = titleText;
+  list.innerHTML = sortedGames.map((g, i) => `
+    <li class="top-list-item">
+      <span class="top-list-rank">#${i + 1}</span>
+      <div class="top-list-details">
+        <div class="top-list-game">BC ${g.bcScore}-${g.oppScore} ${g.opponent} <span class="result-${g.result}">${g.result}</span></div>
+        <div class="top-list-meta">${formatDateString(g.date)} • ${g.location} • ${g.season}</div>
+      </div>
+      <span class="top-list-value">${valueFormatter(g)}</span>
+    </li>
+  `).join('');
+  
+  modal.classList.add('active');
+}
+
+function closeFunFactModal() {
+  document.getElementById('funFactModal').classList.remove('active');
+}
+
+function showStreaks(streakType) {
+  const modal = document.getElementById('funFactModal');
+  const title = document.getElementById('modalTitle');
+  const list = document.getElementById('modalList');
+  
+  let streaks, titleText;
+  
+  switch(streakType) {
+    case 'winStreak':
+      streaks = window.allStreaks.winStreaks.slice(0, 15);
+      titleText = 'Top 15 Win Streaks (Wins Only)';
+      break;
+    case 'lossStreak':
+      streaks = window.allStreaks.lossStreaks.slice(0, 15);
+      titleText = 'Top 15 Loss Streaks (Losses Only)';
+      break;
+    case 'undefeatedStreak':
+      streaks = window.allStreaks.undefeatedStreaks.slice(0, 15);
+      titleText = 'Top 15 Undefeated Streaks (Wins & Ties)';
+      break;
+    case 'winlessStreak':
+      streaks = window.allStreaks.winlessStreaks.slice(0, 15);
+      titleText = 'Top 15 Winless Streaks (Losses & Ties)';
+      break;
+  }
+  
+  title.textContent = titleText;
+  
+  list.innerHTML = streaks.map((streak, index) => {
+    const startDate = formatDateString(streak.games[0].date);
+    const endDate = formatDateString(streak.endGame.date);
+    const record = streak.games.reduce((acc, g) => {
+      acc[g.result]++;
+      return acc;
+    }, { W: 0, L: 0, T: 0 });
+    
+    const recordStr = record.T > 0 ? `${record.W}-${record.L}-${record.T}` : `${record.W}-${record.L}`;
+    
+    return `
+    <li class="top-list-item">
+      <span class="top-list-rank">#${index + 1}</span>
+      <div class="top-list-details">
+        <div class="top-list-game">
+          ${streak.length} game${streak.length > 1 ? 's' : ''} (${recordStr})
+        </div>
+        <div class="top-list-meta">
+          ${startDate} through ${endDate}
+        </div>
+      </div>
+      <span class="top-list-value">${streak.length}</span>
+    </li>
+  `}).join('');
+  
+  modal.classList.add('active');
+}
+
+function exportGames() {
+  const header = 'Season,Date,Opponent,Location,State,BC Score,Opponent Score,Tournament,Notes\n';
+  const rows = games.map(g => 
+    `"${g.season}","${g.date}","${g.opponent}","${g.location}","${g.state}",${g.bcScore},${g.oppScore},"${g.tournament || ''}","${g.notes || ''}"`
+  ).join('\n');
+  
+  document.getElementById('exportData').value = header + rows;
+}
+
+function copyExport() {
+  const textarea = document.getElementById('exportData');
+  if (!textarea.value) {
+    alert('Please generate export data first!');
+    return;
+  }
+  textarea.select();
+  document.execCommand('copy');
+  alert('Copied to clipboard!');
+}
+
+function updateExport() {
+  if (document.getElementById('import-export').classList.contains('active')) {
+    exportGames();
+  }
+}
+
+function importGames() {
+  const data = document.getElementById('importData').value.trim();
+  if (!data) {
+    alert('Please paste your data first!');
+    return;
+  }
+  
+  try {
+    const lines = data.split('\n').filter(line => line.trim());
+    let imported = 0;
+    let errors = [];
+    
+    lines.forEach((line, index) => {
+      let parts = line.includes('\t') ? line.split('\t') : line.split(',');
+      parts = parts.map(p => p.trim().replace(/^["']|["']$/g, ''));
+      
+      if (index === 0 && (parts[0].toLowerCase().includes('season') || parts[1].toLowerCase().includes('date'))) {
+        return;
+      }
+      
+      let season, dateStr, opponent, location, state, bcScoreStr, oppScoreStr, tournament = '', notes = '';
+      
+      if (parts.length >= 9) {
+        [season, dateStr, opponent, location, state, bcScoreStr, oppScoreStr, tournament, ...notes] = parts;
+      } else if (parts.length >= 7 && parts[0].includes('-')) {
+        [season, dateStr, opponent, location, state, bcScoreStr, oppScoreStr, ...notes] = parts;
+      } else if (parts.length >= 7) {
+        [dateStr, opponent, location, state, season, bcScoreStr, oppScoreStr, ...notes] = parts;
+      } else if (parts.length >= 6) {
+        [dateStr, opponent, location, season, bcScoreStr, oppScoreStr, ...notes] = parts;
+        state = 'Unknown';
+      } else {
+        errors.push(`Line ${index + 1}: Not enough columns`);
+        return;
+      }
+      
+      let date;
+      if (dateStr.includes('-') && dateStr.split('-')[0].length === 4) {
+        date = dateStr;
+      } else if (dateStr.includes('/')) {
+        let [m, d, y] = dateStr.split('/');
+        if (y.length === 2) y = '20' + y;
+        date = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      } else {
+        errors.push(`Line ${index + 1}: Invalid date`);
+        return;
+      }
+      
+      const bcScore = parseInt(bcScoreStr);
+      const oppScore = parseInt(oppScoreStr);
+      
+      if (isNaN(bcScore) || isNaN(oppScore)) {
+        errors.push(`Line ${index + 1}: Invalid scores`);
+        return;
+      }
+      
+      const game = {
+        id: Date.now() + imported,
+        date,
+        opponent,
+        location,
+        state,
+        season,
+        bcScore,
+        oppScore,
+        tournament: tournament.trim(),
+        result: bcScore > oppScore ? 'W' : bcScore < oppScore ? 'L' : 'T',
+        notes: notes.join(' ').trim()
+      };
+      
+      games.push(game);
+      imported++;
+    });
+    
+    if (imported > 0) {
+      saveGames();
+      updateAllViews();
+      document.getElementById('importData').value = '';
+      alert(`Successfully imported ${imported} game(s)!${errors.length > 0 ? '\n\n' + errors.length + ' errors' : ''}`);
+      switchTab('game-log');
+      document.querySelector('.tab:nth-child(2)').classList.add('active');
+    } else {
+      alert('No games imported.\n\n' + errors.join('\n'));
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function clearAllData() {
+  if (confirm('This will delete ALL game data permanently. Are you sure?')) {
+    if (confirm('Really sure? All ' + games.length + ' games will be deleted.')) {
+      games = [];
+      localStorage.removeItem('bcHockeyGames');
+      updateAllViews();
+      alert('All data cleared!');
+    }
+  }
+}
+
+function fixDataTypos() {
+  let totalFixed = 0;
+  let fixes = [];
+  
+  let lawlerFixed = 0;
+  games.forEach(game => {
+    if (game.location === 'LAwler Arena') {
+      game.location = 'Lawler Arena';
+      lawlerFixed++;
+      totalFixed++;
+    }
+  });
+  if (lawlerFixed > 0) fixes.push(`${lawlerFixed} "LAwler Arena" → "Lawler Arena"`);
+  
+  if (totalFixed > 0) {
+    saveGames();
+    updateAllViews();
+    alert('Fixed ' + totalFixed + ' issue(s):\n\n' + fixes.join('\n'));
+  } else {
+    alert('No typos found! Your data looks clean.');
+  }
+}
+
+loadGames();
+</script>
+
+</body>
+</html>
